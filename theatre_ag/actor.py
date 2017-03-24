@@ -1,7 +1,7 @@
 import inspect
 import sys
 
-from Queue import Queue, Empty
+from queue import Queue, Empty
 from threading import Event, RLock, Thread
 
 from .task import Task

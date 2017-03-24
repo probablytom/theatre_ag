@@ -1,7 +1,7 @@
 """
 @author twsswt
 """
-from workflow import Idling
+from .workflow import Idling
 
 
 class Task(object):
