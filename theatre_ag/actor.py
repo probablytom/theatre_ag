@@ -65,7 +65,11 @@ class Actor(object):
 
     @property
     def task_history(self):
-        return filter(lambda task: task.workflow.logging is not False, self._task_history)
+        task_history = filter(lambda task: task.workflow.logging is not False, self._task_history)
+        if PYTHON_VERSION == '2':
+            return task_history
+        else:
+            return list(task_history)
 
     @property
     def last_task(self):
@@ -129,7 +133,10 @@ class Actor(object):
             try:
                 try:
                     task = self.get_next_task()
-                    entry_point_name = task.entry_point.func_name
+                    if PYTHON_VERSION == '2':
+                        entry_point_name = task.entry_point.func_name
+                    else:
+                        entry_point_name = task.entry_point.__name__
 
                     allocate_workflow_to(self, task.workflow)
                     task.entry_point = task.workflow.__getattribute__(entry_point_name)
@@ -152,6 +159,8 @@ class Actor(object):
                 else:
                     print("Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
                         (self.logical_name, str(e), str(task)), file=sys.stderr)
+                    import time
+                    time.sleep(1)
 
         # Ensure that clock can proceed for other listeners.
         self.clock.remove_tick_listener(self)

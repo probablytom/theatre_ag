@@ -2,6 +2,8 @@
 @author twsswt
 """
 from .workflow import Idling
+import sys
+PYTHON_VERSION = sys.version[0]
 
 
 class Task(object):
@@ -64,4 +66,7 @@ class Task(object):
 
         args = ','.join(map(lambda e: str(e), self.args))
 
-        return '%s(%s)[%s->%s]' % (self.entry_point.func_name, args, start_tick, finish_tick)
+        if PYTHON_VERSION == '2':
+            return '%s(%s)[%s->%s]' % (self.entry_point.func_name, args, start_tick, finish_tick)
+        else:
+            return '%s(%s)[%s->%s]' % (self.entry_point.__name__, args, start_tick, finish_tick)
