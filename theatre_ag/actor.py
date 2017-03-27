@@ -129,10 +129,7 @@ class Actor(object):
             try:
                 try:
                     task = self.get_next_task()
-                    if PYTHON_VERSION == '2':
-                        entry_point_name = task.entry_point.func_name
-                    else:
-                        entry_point_name = task.entry_point.__name__
+                    entry_point_name = task.entry_point.func_name
 
                     allocate_workflow_to(self, task.workflow)
                     task.entry_point = task.workflow.__getattribute__(entry_point_name)
