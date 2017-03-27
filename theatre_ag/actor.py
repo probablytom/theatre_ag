@@ -7,6 +7,8 @@ from threading import Event, RLock, Thread
 from .task import Task
 from .workflow import allocate_workflow_to, Idling
 
+PYTHON_VERSION = sys.version[0]
+
 
 class OutOfTurnsException(Exception):
 
@@ -48,6 +50,9 @@ class Actor(object):
         self.next_turn = 0
 
     def log_task_initiation(self, workflow, entry_point, args):
+
+        print(self.current_task is None)
+        print(self.current_task)
 
         if self.current_task.initiated:
             self.current_task = self.current_task.append_sub_task(workflow, entry_point, args)
@@ -121,23 +126,31 @@ class Actor(object):
             try:
                 try:
                     task = self.get_next_task()
-                    entry_point_name = task.entry_point.func_name
+                    if PYTHON_VERSION == '2':
+                        entry_point_name = task.entry_point.func_name
+                    else:
+                        entry_point_name = task.entry_point.__name__
                     allocate_workflow_to(self, task.workflow)
                     task.entry_point = task.workflow.__getattribute__(entry_point_name)
-
+    
                 except Empty:
                     task = Task(self.idling, self.idling.idle)
 
                 if task is not None:
                     self._task_history.append(task)
                     self.current_task = task
-                    task.entry_point(*task.args)
+                    return_value = task.entry_point(*task.args)
+                    self.handle_task_return(return_value)
 
             except OutOfTurnsException:
                 break
             except Exception as e:
-                print >> sys.stderr, "Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
-                                     (self.logical_name, str(e.message), str(task))
+                if PYTHON_VERSION == '2':
+                    print >> sys.stderr, "Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
+                                        (self.logical_name, str(e.message), str(task))
+                else:
+                    print("Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
+                        (self.logical_name, str(e), str(task)), file=sys.stderr)
                 pass
 
         # Ensure that clock can proceed for other listeners.
@@ -196,6 +209,9 @@ class TaskQueueActor(Actor):
 
     def get_next_task(self):
         return self.task_queue.get(block=False)
+
+    def handle_task_return(self, return_value):
+        pass
 
     def tasks_waiting(self):
         return not self.task_queue.empty()

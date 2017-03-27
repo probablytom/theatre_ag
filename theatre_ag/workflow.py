@@ -32,7 +32,7 @@ def allocate_workflow_to(actor, workflow, logging=True):
         if hasattr(member.__class__, 'is_workflow') and not hasattr(member, 'actor'):
             allocate_workflow_to(actor, member, logging)
 
-
+ync
 def treat_as_workflow(workflow_class):
     """
     Modifies the specified class to intercept __getattribute__ calls for task methods of a workflow, and synchronise
