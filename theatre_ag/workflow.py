@@ -32,7 +32,7 @@ def allocate_workflow_to(actor, workflow, logging=True):
         if hasattr(member.__class__, 'is_workflow') and not hasattr(member, 'actor'):
             allocate_workflow_to(actor, member, logging)
 
-ync
+
 def treat_as_workflow(workflow_class):
     """
     Modifies the specified class to intercept __getattribute__ calls for task methods of a workflow, and synchronise
@@ -46,7 +46,8 @@ def treat_as_workflow(workflow_class):
 
         attribute = reference_get_attr(self, item)
 
-        if hasattr(attribute, 'func_name') and attribute.func_name[0:2] == '__':
+        if (hasattr(attribute, 'func_name') and attribute.func_name[0:2] == '__') or \
+                (hasattr(attribute, '__name__') and attribute.__name__[0:2] == '__'):
             return attribute
 
         elif inspect.ismethod(attribute) or inspect.isfunction(attribute):

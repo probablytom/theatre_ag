@@ -51,8 +51,8 @@ class Actor(object):
 
     def log_task_initiation(self, workflow, entry_point, args):
 
-        print(self.current_task is None)
-        print(self.current_task)
+        #print(self.current_task is None)
+        #print(self.current_task)
 
         if self.current_task.initiated:
             self.current_task = self.current_task.append_sub_task(workflow, entry_point, args)
@@ -100,6 +100,9 @@ class Actor(object):
 
         return recursive_task_count(self.task_history)
 
+    def handle_task_return(self, return_value):
+        pass
+
     def get_next_task(self):
         """
         Implementing classes or mix ins should override this method.  By default, this method will cause an Actor to
@@ -130,9 +133,10 @@ class Actor(object):
                         entry_point_name = task.entry_point.func_name
                     else:
                         entry_point_name = task.entry_point.__name__
+
                     allocate_workflow_to(self, task.workflow)
                     task.entry_point = task.workflow.__getattribute__(entry_point_name)
-    
+
                 except Empty:
                     task = Task(self.idling, self.idling.idle)
 
@@ -147,11 +151,10 @@ class Actor(object):
             except Exception as e:
                 if PYTHON_VERSION == '2':
                     print >> sys.stderr, "Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
-                                        (self.logical_name, str(e.message), str(task))
+                        (self.logical_name, str(e.message), str(task))
                 else:
                     print("Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
                         (self.logical_name, str(e), str(task)), file=sys.stderr)
-                pass
 
         # Ensure that clock can proceed for other listeners.
         self.clock.remove_tick_listener(self)
