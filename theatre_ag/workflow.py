@@ -6,6 +6,8 @@ import inspect
 import sys
 PYTHON_VERSION = sys.version[0]
 
+registered_workflows = []
+
 
 def default_cost(cost=0):
     def workflow_decorator(func):
@@ -99,7 +101,9 @@ def treat_as_workflow(workflow_class):
         else:
             return attribute
 
-    workflow_class.__getattribute__ = __tracked_getattribute
+    if workflow_class not in registered_workflows:
+        registered_workflows.append(workflow_class)
+        workflow_class.__getattribute__ = __tracked_getattribute
 
 
 class Idling(object):

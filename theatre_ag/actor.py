@@ -51,9 +51,6 @@ class Actor(object):
 
     def log_task_initiation(self, workflow, entry_point, args):
 
-        #print(self.current_task is None)
-        #print(self.current_task)
-
         if self.current_task.initiated:
             self.current_task = self.current_task.append_sub_task(workflow, entry_point, args)
 
