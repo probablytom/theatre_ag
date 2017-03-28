@@ -53,8 +53,9 @@ class SynchronizingClock(object):
         self._tick_listeners_lock.acquire()
         cached_tick_listeners = list(self._tick_listeners)
         self._tick_listeners_lock.release()
-
+        print ("HERE")
         for tick_listener in cached_tick_listeners:
+            print ("Waiting on ", tick_listener)
             tick_listener.waiting_for_tick.wait()
 
         self._ticks += 1

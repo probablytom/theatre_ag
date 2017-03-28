@@ -95,9 +95,9 @@ def treat_as_workflow(workflow_class):
                     sync_wrap.func_name = attribute.func_name
             else:
                 if inspect.ismethod(attribute):
-                    sync_wrap.func_name = attribute.__func__.__name__
+                    sync_wrap.__name__ = attribute.__func__.__name__
                 else:
-                    sync_wrap.func_name = attribute.__name__
+                    sync_wrap.__name__ = attribute.__name__
 
             return sync_wrap
 
