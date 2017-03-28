@@ -1,4 +1,5 @@
 import inspect
+import traceback
 import sys
 
 from queue import Queue, Empty
@@ -51,14 +52,16 @@ class Actor(object):
 
     def log_task_initiation(self, workflow, entry_point, args):
 
-        if self.current_task.initiated:
-            self.current_task = self.current_task.append_sub_task(workflow, entry_point, args)
+        if self.current_task is not None:
+            if self.current_task.initiated:
+                self.current_task = self.current_task.append_sub_task(workflow, entry_point, args)
 
-        self.current_task.initiate(self.clock.current_tick)
+            self.current_task.initiate(self.clock.current_tick)
 
     def log_task_completion(self):
-        self.current_task.complete(self.clock.current_tick)
-        self.current_task = self.current_task.parent
+        if self.current_task is not None:
+            self.current_task.complete(self.clock.current_tick)
+            self.current_task = self.current_task.parent
 
     @property
     def task_history(self):
@@ -130,10 +133,7 @@ class Actor(object):
             try:
                 try:
                     task = self.get_next_task()
-                    if PYTHON_VERSION == '2':
-                        entry_point_name = task.entry_point.func_name
-                    else:
-                        entry_point_name = task.entry_point.__name__
+                    entry_point_name = task.entry_point.func_name
 
                     allocate_workflow_to(self, task.workflow)
                     task.entry_point = task.workflow.__getattribute__(entry_point_name)
@@ -149,6 +149,7 @@ class Actor(object):
 
             except OutOfTurnsException:
                 break
+            '''
             except Exception as e:
                 if PYTHON_VERSION == '2':
                     print >> sys.stderr, "Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
@@ -156,8 +157,7 @@ class Actor(object):
                 else:
                     print("Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
                         (self.logical_name, str(e), str(task)), file=sys.stderr)
-                    import time
-                    time.sleep(1)
+            '''
 
         # Ensure that clock can proceed for other listeners.
         self.clock.remove_tick_listener(self)

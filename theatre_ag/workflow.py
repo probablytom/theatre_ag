@@ -3,6 +3,7 @@
 """
 
 import inspect
+from copy import copy
 import sys
 PYTHON_VERSION = sys.version[0]
 
@@ -44,9 +45,12 @@ def treat_as_workflow(workflow_class):
 
     reference_get_attr = workflow_class.__getattribute__
 
-    def __tracked_getattribute(self, item):
+    def __tracked_getattribute(self, item, ordinary_lookup=False):
 
         attribute = reference_get_attr(self, item)
+
+        if ordinary_lookup:
+            return attribute
 
         if (hasattr(attribute, 'func_name') and attribute.func_name[0:2] == '__') or \
                 (hasattr(attribute, '__name__') and attribute.__name__[0:2] == '__'):
