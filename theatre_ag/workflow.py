@@ -105,9 +105,9 @@ def treat_as_workflow(workflow_class):
         else:
             return attribute
 
-    if workflow_class not in registered_workflows:
-        registered_workflows.append(workflow_class)
-        workflow_class.__getattribute__ = __tracked_getattribute
+# if workflow_class not in registered_workflows:
+#     registered_workflows.append(workflow_class)
+    workflow_class.__getattribute__ = __tracked_getattribute
 
 
 class Idling(object):
