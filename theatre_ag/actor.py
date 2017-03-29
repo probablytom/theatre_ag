@@ -50,7 +50,7 @@ class Actor(object):
 
         self.next_turn = 0
 
-    def log_task_initiation(self, workflow, entry_point, args):
+    def log_task_initiation(self, entry_point, workflow, args):
 
         if self.current_task is not None:
             if self.current_task.initiated:
@@ -92,6 +92,7 @@ class Actor(object):
             result = 0
 
             for completed_task in task_history:
+
                 result += recursive_task_count(completed_task.sub_tasks)
 
                 func = completed_task.entry_point.im_func if inspect.ismethod(completed_task.entry_point) \
@@ -115,6 +116,13 @@ class Actor(object):
         """
         raise Empty()
 
+    def handle_task_return(self, task, value):
+        """
+        Implementing classes or mix ins should override this method.  By default, this method does nothing with a
+        completed task.
+        """
+        pass
+
     def tasks_waiting(self):
         """
         Implementing classes or mix ins should override this method.  By default, this method will return False.
@@ -133,12 +141,16 @@ class Actor(object):
             try:
                 try:
                     task = self.get_next_task()
-                    entry_point_name = task.entry_point.__name__
+                    if PYTHON_VERSION == '2':
+                        entry_point_name = task.entry_point.func_name
+                    else:
+                        entry_point_name = task.entry_point.__name__
+
                     allocate_workflow_to(self, task.workflow)
                     task.entry_point = task.workflow.__getattribute__(entry_point_name)
 
                 except Empty:
-                    task = Task(self.idling, self.idling.idle)
+                    task = Task(self.idling.idle, self.idling)
 
                 if task is not None:
                     self._task_history.append(task)
@@ -175,7 +187,19 @@ class Actor(object):
     def wait_for_shutdown(self):
         self.thread.join()
 
-    def incur_delay(self, delay):
+    def calculate_delay(self, entry_point, workflow=None, args=()):
+        """
+        Implementing classes or mix ins should override this method.  By default, this method will return the supplied
+         default cost of the entry point.
+         :param entry_point: a function reference for the task about to be executed.
+         :param workflow: the socio-technical context that can be used to calculate the delay.
+         :param args: the values to be invoked on the entry point into the workflow
+        """
+        return entry_point.default_cost
+
+    def incur_delay(self, attribute, workflow=None, args=()):
+        delay = self.calculate_delay(attribute, workflow, args)
+
         self.next_turn = max(self.next_turn, self.clock.current_tick)
         self.next_turn += delay
 
@@ -221,8 +245,8 @@ class TaskQueueActor(Actor):
     def tasks_waiting(self):
         return not self.task_queue.empty()
 
-    def allocate_task(self, workflow, entry_point, args=list()):
+    def allocate_task(self, entry_point=None, workflow=None, args=list()):
 
-        allocated_task = Task(workflow, entry_point, args)
+        allocated_task = Task(entry_point, workflow, args)
         self.task_queue.put(allocated_task)
         return allocated_task

@@ -7,7 +7,11 @@ from theatre_ag.workflow import Idling
 class TaskTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.task = Task(None, None)
+
+        def example_task():
+            pass
+
+        self.task = Task(example_task)
 
     def test_last_non_idling_tick_a(self):
         """
@@ -29,8 +33,12 @@ class TaskTestCase(unittest.TestCase):
         The main task has been initiated.
         One non-idling sub task has been initiated.
         """
+
+        def example_sub_task():
+            pass
+
         self.task.initiate(1)
-        sub_task = self.task.append_sub_task(None, None, ())
+        sub_task = self.task.append_sub_task(example_sub_task, ())
         sub_task.initiate(2)
         self.assertEquals(2, self.task.last_non_idling_tick)
 
@@ -39,8 +47,10 @@ class TaskTestCase(unittest.TestCase):
         The main task has been initiated.
         One non-idling sub task has completed.
         """
+        def example_sub_task(): pass
+
         self.task.initiate(1)
-        sub_task = self.task.append_sub_task(None, None, ())
+        sub_task = self.task.append_sub_task(example_sub_task, ())
         sub_task.initiate(2)
         sub_task.complete(3)
         self.assertEquals(3, self.task.last_non_idling_tick)
@@ -50,8 +60,10 @@ class TaskTestCase(unittest.TestCase):
         The main task has been completed.
         One non-idling sub task has completed.
         """
+        def example_sub_task(): pass
+
         self.task.initiate(1)
-        sub_task = self.task.append_sub_task(None, None, ())
+        sub_task = self.task.append_sub_task(example_sub_task, ())
         sub_task.initiate(2)
         sub_task.complete(3)
         self.task.complete(4)
@@ -63,7 +75,7 @@ class TaskTestCase(unittest.TestCase):
         One idling sub task has initiated.
         """
         self.task.initiate(1)
-        sub_task = self.task.append_sub_task(Idling, Idling.idle, ())
+        sub_task = self.task.append_sub_task(Idling.idle, Idling, ())
         sub_task.initiate(2)
         sub_task.complete(3)
         self.assertEquals(1, self.task.last_non_idling_tick)
@@ -87,11 +99,13 @@ class TaskTestCase(unittest.TestCase):
         One sub task has been initiated
         """
         self.task.initiate(1)
-        idling_sub_task = self.task.append_sub_task(Idling, Idling.idle, ())
+        idling_sub_task = self.task.append_sub_task(Idling.idle, Idling, ())
         idling_sub_task.initiate(2)
         idling_sub_task.complete(3)
 
-        sub_task = self.task.append_sub_task(None, None, ())
+        def example_sub_task(): pass
+
+        sub_task = self.task.append_sub_task(example_sub_task, ())
         sub_task.initiate(4)
         self.assertEquals(4, self.task.last_non_idling_tick)
 
@@ -101,12 +115,14 @@ class TaskTestCase(unittest.TestCase):
         One sub task has been completed.
         One idling sub task has completed.
         """
+        def example_sub_task(): pass
+
         self.task.initiate(1)
-        sub_task = self.task.append_sub_task(None, None, ())
+        sub_task = self.task.append_sub_task(example_sub_task, ())
         sub_task.initiate(2)
         sub_task.complete(3)
 
-        idling_sub_task = self.task.append_sub_task(Idling, Idling.idle, ())
+        idling_sub_task = self.task.append_sub_task(Idling.idle, Idling, ())
         idling_sub_task.initiate(4)
         idling_sub_task.complete(5)
 
@@ -118,12 +134,14 @@ class TaskTestCase(unittest.TestCase):
         One sub task has been completed.
         One idling sub task  of the sub task has completed.
         """
+        def example_sub_task(): pass
+
         self.task.initiate(1)
-        sub_task = self.task.append_sub_task(None, None, ())
+        sub_task = self.task.append_sub_task(example_sub_task, ())
         sub_task.initiate(2)
         sub_task.complete(3)
 
-        idling_sub_task = sub_task.append_sub_task(Idling, Idling.idle, ())
+        idling_sub_task = sub_task.append_sub_task(Idling.idle, Idling, ())
         idling_sub_task.initiate(4)
         idling_sub_task.complete(5)
 

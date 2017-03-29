@@ -24,5 +24,6 @@ class ClockTestCase(unittest.TestCase):
         self.tick_listener.waiting_for_tick.wait.assert_called_once_with()
         self.tick_listener.notify_new_tick.assert_called_once_with()
 
+
 if __name__ == '__main__':
     unittest.main()

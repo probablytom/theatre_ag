@@ -11,10 +11,20 @@ class Task(object):
     Captures status information about a task to be performed by an actor.
     """
 
-    def __init__(self, workflow, entry_point, args=(), parent=None):
-        self.parent = parent
-        self.workflow = workflow
+    def __init__(self, entry_point, workflow=None, args=(), parent=None):
+
         self.entry_point = entry_point
+
+        if workflow is None:
+            class AnonymousWorkflow(object):
+                is_workflow = True
+
+            self.workflow = AnonymousWorkflow()
+            setattr(self.workflow, entry_point.func_name, entry_point)
+        else:
+            self.workflow = workflow
+
+        self.parent = parent
         self.args = args
 
         self.start_tick = None
@@ -25,8 +35,8 @@ class Task(object):
     def initiate(self, start_tick):
         self.start_tick = start_tick
 
-    def append_sub_task(self, workflow, entry_point, args=()):
-        sub_task = Task(workflow, entry_point, args, parent=self)
+    def append_sub_task(self, entry_point, workflow, args=()):
+        sub_task = Task(entry_point, workflow, args, parent=self)
         self.sub_tasks.append(sub_task)
         return sub_task
 
