@@ -20,7 +20,10 @@ class Task(object):
                 is_workflow = True
 
             self.workflow = AnonymousWorkflow()
-            setattr(self.workflow, entry_point.func_name, entry_point)
+            if PYTHON_VERSION == '2':
+                setattr(self.workflow, entry_point.func_name, entry_point)
+            else:
+                setattr(self.workflow, entry_point.__name__, entry_point)
         else:
             self.workflow = workflow
 

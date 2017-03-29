@@ -130,6 +130,7 @@ class Actor(object):
         """
         return False
 
+
     def perform(self):
         """
         Repeatedly polls the actor's asynchronous work queue until the actor is shutdown.  Tasks in the work queue are
@@ -156,7 +157,7 @@ class Actor(object):
                     self._task_history.append(task)
                     self.current_task = task
                     return_value = task.entry_point(*task.args)
-                    self.handle_task_return(return_value)
+                    self.handle_task_return(task, return_value)
 
             except OutOfTurnsException:
                 break
