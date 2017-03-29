@@ -198,9 +198,7 @@ class Actor(object):
         """
         return entry_point.default_cost
 
-    def incur_delay(self, attribute, workflow=None, args=()):
-        delay = self.calculate_delay(attribute, workflow, args)
-
+    def incur_delay(self, delay):
         self.next_turn = max(self.next_turn, self.clock.current_tick)
         self.next_turn += delay
 
