@@ -1,10 +1,11 @@
 """
 @author twsswt
 """
-
 import inspect
+from .workflow import Idling
+import sys
 
-from workflow import Idling
+PYTHON_VERSION = sys.version[0]
 
 
 class Task(object):
@@ -15,8 +16,9 @@ class Task(object):
     def __init__(self, entry_point, workflow=None, args=(), parent=None):
 
         self.entry_point = entry_point
+        self.workflow = workflow
 
-        if workflow is None:
+        if self.workflow is None:
 
             if hasattr(entry_point, 'im_self'):
                 self.workflow = entry_point.im_self
@@ -30,9 +32,10 @@ class Task(object):
                     is_workflow = True
 
                 self.workflow = AnonymousWorkflow()
-                setattr(self.workflow, entry_point.func_name, entry_point)
-        else:
-            self.workflow = workflow
+                if PYTHON_VERSION == '2':
+                    setattr(self.workflow, entry_point.func_name, entry_point)
+                else:
+                    setattr(self.workflow, entry_point.__name__, entry_point)
 
         self.parent = parent
         self.args = args
@@ -106,7 +109,10 @@ class Task(object):
 
         args = ','.join(map(lambda e: str(e), self.args))
 
-        return '%s(%s)[%s->%s]' % (self.entry_point_name, args, start_tick, finish_tick)
+        if PYTHON_VERSION == '2':
+            return '%s(%s)[%s->%s]' % (self.entry_point.func_name, args, start_tick, finish_tick)
+        else:
+            return '%s(%s)[%s->%s]' % (self.entry_point.__name__, args, start_tick, finish_tick)
 
 
 def format_task_trees(tasks, indent=""):

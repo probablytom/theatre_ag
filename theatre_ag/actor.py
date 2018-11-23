@@ -2,15 +2,15 @@
 @author twsswt
 """
 
-import inspect
 import sys
-import traceback
 
 from Queue import Queue, Empty
 from threading import Event, RLock, Thread
 
 from .task import Task
 from .workflow import allocate_workflow_to, Idling
+
+PYTHON_VERSION = sys.version[0]
 
 
 class OutOfTurnsException(Exception):
@@ -58,18 +58,24 @@ class Actor(object):
 
     def log_task_initiation(self, entry_point, workflow, args):
 
-        if self.current_task.initiated:
-            self.current_task = self.current_task.append_sub_task(entry_point, workflow, args)
+        if self.current_task is not None:
+            if self.current_task.initiated:
+                self.current_task = self.current_task.append_sub_task(workflow, entry_point, args)
 
-        self.current_task.initiate(self.clock.current_tick)
+            self.current_task.initiate(self.clock.current_tick)
 
     def log_task_completion(self):
-        self.current_task.complete(self.clock.current_tick)
-        self.current_task = self.current_task.parent
+        if self.current_task is not None:
+            self.current_task.complete(self.clock.current_tick)
+            self.current_task = self.current_task.parent
 
     @property
     def task_history(self):
-        return filter(lambda task: task.workflow.logging is not False, self._task_history)
+        task_history = filter(lambda task: task.workflow.logging is not False, self._task_history)
+        if PYTHON_VERSION == '2':
+            return task_history
+        else:
+            return list(task_history)
 
     @property
     def last_task(self):
@@ -102,6 +108,9 @@ class Actor(object):
 
         return recursive_task_count(self.task_history)
 
+    def handle_task_return(self, return_value):
+        pass
+
     def get_next_task(self):
         """
         Implementing classes or mix ins should override this method.  By default, this method will cause an Actor to
@@ -124,6 +133,7 @@ class Actor(object):
         """
         return False
 
+
     def perform(self):
         """
         Repeatedly polls the actor's asynchronous work queue until the actor is shutdown.  Tasks in the work queue are
@@ -135,8 +145,11 @@ class Actor(object):
             try:
                 try:
                     task = self.get_next_task()
+                    if PYTHON_VERSION == '2':
+                        entry_point_name = task.entry_point.func_name
+                    else:
+                        entry_point_name = task.entry_point.__name__
 
-                    entry_point_name = task.entry_point.func_name
                     allocate_workflow_to(self, task.workflow)
                     task.entry_point = task.workflow.__getattribute__(entry_point_name)
 
@@ -146,15 +159,21 @@ class Actor(object):
                 if task is not None:
                     self._task_history.append(task)
                     self.current_task = task
-                    self.handle_task_return(task, task.entry_point(*task.args))
+
+                    return_value = task.entry_point(*task.args)
+                    self.handle_task_return(task, return_value)
 
             except OutOfTurnsException:
                 break
+            '''
             except Exception as e:
-                print >> sys.stderr, "Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
-                                     (self.logical_name, str(e.message), str(task))
-                traceback.print_exc(file=sys.stderr)
-                pass
+                if PYTHON_VERSION == '2':
+                    print >> sys.stderr, "Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
+                        (self.logical_name, str(e.message), str(task))
+                else:
+                    print("Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
+                        (self.logical_name, str(e), str(task)), file=sys.stderr)
+            '''
 
         # Ensure that clock can proceed for other listeners.
         self.clock.remove_tick_listener(self)
@@ -174,7 +193,7 @@ class Actor(object):
         self.thread.join()
 
     # noinspection PyMethodMayBeStatic,PyMethodMayBeStatic
-    def calculate_delay(self, entry_point, workflow=None, args=()):
+    def calculate_delay(self, entry_point):
         """
         Implementing classes or mix ins should override this method.  By default, this method will return the
         <code>default_cost</code> cost annotation value of the entry point if it exists, or 0 if no
@@ -188,9 +207,7 @@ class Actor(object):
         else:
             return 0
 
-    def incur_delay(self, attribute, workflow=None, args=()):
-        delay = self.calculate_delay(attribute, workflow, args)
-
+    def incur_delay(self, delay):
         self.next_turn = max(self.next_turn, self.clock.current_tick)
         self.next_turn += delay
 
@@ -229,6 +246,9 @@ class TaskQueueActor(Actor):
 
     def get_next_task(self):
         return self.task_queue.get(block=False)
+
+    def handle_task_return(self, return_value):
+        pass
 
     def tasks_waiting(self):
         return not self.task_queue.empty()

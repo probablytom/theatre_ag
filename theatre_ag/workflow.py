@@ -3,6 +3,10 @@
 """
 
 import inspect
+import sys
+PYTHON_VERSION = sys.version[0]
+
+registered_workflows = []
 
 
 def default_cost(cost=0):
@@ -40,11 +44,15 @@ def treat_as_workflow(workflow_class):
 
     reference_get_attr = workflow_class.__getattribute__
 
-    def __tracked_getattribute(self, item):
+    def __tracked_getattribute(self, item, ordinary_lookup=False):
 
         attribute = reference_get_attr(self, item)
 
-        if hasattr(attribute, 'func_name') and attribute.func_name[0:2] == '__':
+        if ordinary_lookup:
+            return attribute
+
+        if (hasattr(attribute, 'func_name') and attribute.func_name[0:2] == '__') or \
+                (hasattr(attribute, '__name__') and attribute.__name__[0:2] == '__'):
             return attribute
 
         elif inspect.ismethod(attribute) or inspect.isfunction(attribute):
@@ -60,30 +68,46 @@ def treat_as_workflow(workflow_class):
 
                     # TODO Pass function name and indicative cost to a cost calculation function.
 
-                    actor.incur_delay(attribute, self, args)
-
+                    cost = actor.calculate_delay(attribute)
+                    actor.incur_delay(cost)
                     actor.wait_for_turn()
 
                     try:
-                        return attribute.im_func(self, *args, **kwargs) if inspect.ismethod(attribute) \
-                            else attribute(*args, **kwargs)
+                        if PYTHON_VERSION == '2':
+                            return attribute.im_func(self, *args, **kwargs) if inspect.ismethod(attribute) \
+                                else attribute(*args, **kwargs)
+                        else:
+                            return attribute.__func__(self, *args, **kwargs) if inspect.ismethod(attribute) \
+                                else attribute(*args, **kwargs)
                     finally:
                         actor.log_task_completion()
                         actor.busy.release()
                 else:
-                    return attribute.im_func(self, *args, **kwargs)
+                    if PYTHON_VERSION == '2':
+                        return attribute.im_func(self, *args, **kwargs)
+                    else:
+                        return attribute.__func__(self, *args, **kwargs)
 
-            if inspect.ismethod(attribute):
-                sync_wrap.func_name = attribute.im_func.func_name
+            if PYTHON_VERSION == '2':
+                if inspect.ismethod(attribute):
+                    sync_wrap.func_name = attribute.im_func.func_name
+                else:
+                    sync_wrap.func_name = attribute.func_name
             else:
-                sync_wrap.func_name = attribute.func_name
+                if inspect.ismethod(attribute):
+                    sync_wrap.__name__ = attribute.__func__.__name__
+                else:
+                    sync_wrap.__name__ = attribute.__name__
 
             return sync_wrap
 
         else:
             return attribute
 
-    workflow_class.__getattribute__ = __tracked_getattribute
+    if workflow_class not in registered_workflows:
+        registered_workflows.append(workflow_class)
+        workflow_class.__getattribute__ = __tracked_getattribute
+
 
 
 class Idling(object):
