@@ -31,7 +31,7 @@ class Actor(object):
     executed in synchronization with the actor's clock.
     """
 
-    def __init__(self, logical_name, clock):
+    def __init__(self, logical_name, clock, *args, **kwargs):
         self.logical_name = logical_name
         self.clock = clock
 
@@ -53,6 +53,8 @@ class Actor(object):
         allocate_workflow_to(self, self.idling, logging=False)
 
         self.next_turn = 0
+
+        super(Actor, self).__init__(*args, **kwargs)
 
     def log_task_initiation(self, entry_point, workflow, args):
 
