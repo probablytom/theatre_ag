@@ -1,7 +1,7 @@
 import unittest
 
-from theatre_ag.task import Task
-from theatre_ag.workflow import Idling
+from theatre_ag.theatre_ag.task import Task
+from theatre_ag.theatre_ag.workflow import Idling
 
 
 def example_sub_task(): pass

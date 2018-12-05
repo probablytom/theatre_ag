@@ -165,15 +165,14 @@ class Actor(object):
 
             except OutOfTurnsException:
                 break
-            '''
             except Exception as e:
                 if PYTHON_VERSION == '2':
                     print >> sys.stderr, "Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
                         (self.logical_name, str(e.message), str(task))
-                else:
-                    print("Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
-                        (self.logical_name, str(e), str(task)), file=sys.stderr)
-            '''
+                # else:
+                #     # Note: if you're using a python2 IDE this'll raise a syntax error, but it's valid in Python3!
+                #     print("Warning, actor [%s] encountered exception [%s], in workflow [%s]." % \
+                #         (self.logical_name, str(e), str(task)), file=sys.stderr)
 
         # Ensure that clock can proceed for other listeners.
         self.clock.remove_tick_listener(self)
